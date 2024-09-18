@@ -1,5 +1,7 @@
 package com.example.jetbizcard_portfolio
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,11 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.jetbizcard_portfolio.ui.theme.JetBizCardPortfolioTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +67,31 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+@Composable
+fun LinkedInLink(link:String, name:String) {
+    val context = LocalContext.current  // Ensure this is within a composable function
+
+    val annotatedString = buildAnnotatedString {
+
+        pushStringAnnotation(tag = "URL", annotation = link)
+        withStyle(style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)) {
+            append(name)
+        }
+        pop()
+    }
+
+    ClickableText(
+        text = annotatedString,
+        onClick = { offset ->
+            annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                .firstOrNull()?.let { stringAnnotation ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(stringAnnotation.item))
+                    context.startActivity(intent)  // Using the context to start the activity
+                }
+        },
+        modifier = Modifier.padding(8.dp)
+    )
 }
 
 @Composable
@@ -116,38 +150,53 @@ private fun Content(){
             shape = RoundedCornerShape(corner = CornerSize(6.dp)),
             border = BorderStroke(width = 2.dp, color = Color.LightGray)
             ){
-            Portfolio(data = listOf("Project 1", "Project 2"), data2 = listOf("JustChat- A Messaging App", "SocialPulse-Sentiment_Analysis"))
+            Portfolio(data = listOf("Project 1", "Project 2"), data2 = listOf("JustChat- A Messaging App", "SocialPulse-Sentiment_Analysis")
+            ,data3= listOf("https://github.com/MayankLuthyagi/JustChat-Messaging_App", "https://github.com/MayankLuthyagi/SocialPulse-Sentiment_Analysis"))
         }
     }
 }
 
 @Composable
-fun Portfolio(data: List<String>, data2:List<String>) {
+fun Portfolio(data: List<String>, data2: List<String>, data3: List<String>) {
     LazyColumn {
-        items(data.zip(data2)) { (item, item2) ->
-            Card(modifier = Modifier
-                .padding(13.dp)
-                .fillMaxWidth(),
-                shape = RectangleShape ,
-                elevation = CardDefaults.cardElevation(4.dp)) {
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(7.dp)) {
+        // Correct destructuring with Triple
+        items(data.zip(data2).zip(data3) { firstPair, thirdItem ->
+            Triple(firstPair.first, firstPair.second, thirdItem)
+        }) { item ->
+            val (item1, item2, item3) = item  // Destructure the Triple
+
+            Card(
+                modifier = Modifier
+                    .padding(13.dp)
+                    .fillMaxWidth(),
+                shape = RectangleShape,
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(7.dp)
+                ) {
                     CreateImageProfile(
                         modifier = Modifier.size(100.dp),
                         imageRecource = R.drawable.github_pic
                     )
-                    Column() {
-                        Text(text = item, fontWeight = FontWeight.Bold, modifier = Modifier.padding(5.dp))
-                        Text(text = item2, style = MaterialTheme.typography.bodySmall)
+                    Column {
+                        Text(
+                            text = item1,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(5.dp)
+                        )
+                        LinkedInLink(item3,item2) // Correct the LinkedInLink usage
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun CreateInfo() {
@@ -165,7 +214,10 @@ private fun CreateInfo() {
             text = "Android Developer",
             modifier = Modifier.padding(5.dp)
         )
-        Text(text = "Linkedin")
+        Row {
+            Text(text = "connect with me", modifier = Modifier.padding(7.dp))
+            LinkedInLink("https://www.linkedin.com/in/mayank012/", "LinkedIn")
+        }
     }
 }
 
